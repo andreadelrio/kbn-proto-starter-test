@@ -4,8 +4,10 @@ name: Deploy
 # - The site root lists every version: main first, then branches, most recently updated first.
 # - The default branch is published at /main/, every other branch at /branches/<branch>/.
 # - Pushing a branch updates only its version. Deleting a branch removes it.
-# The published site is kept on the pages-site branch. Several designers can push at once.
-# Setup (once per repo): Settings → Pages → Source: GitHub Actions.
+# The published site is the pages-site branch, which GitHub Pages serves as it is.
+# Several designers can push at once.
+# Setup (once per repo, after the first push): Settings → Pages → Source: Deploy from a branch,
+# Branch: pages-site, folder: / (root).
 # The kbn-proto-starter template itself never deploys; repos created from it do.
 
 on:
@@ -17,8 +19,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 env:
   DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
@@ -84,29 +84,3 @@ jobs:
           BRANCH: ${{ steps.where.outputs.branch }}
           TARGET: ${{ steps.where.outputs.target }}
         run: bash scripts/publish-site.sh remove "$BRANCH" "$TARGET"
-
-  # Publishes the latest pages-site. Runs one at a time; a waiting run is replaced by a newer one,
-  # which is fine because each run publishes everything on pages-site when it starts.
-  deploy:
-    needs: publish
-    runs-on: ubuntu-latest
-    concurrency:
-      group: pages
-      cancel-in-progress: false
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Check out the published site
-        uses: actions/checkout@v4
-        with:
-          ref: pages-site
-
-      - name: Upload the site
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4

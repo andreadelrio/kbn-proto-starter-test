@@ -85,7 +85,7 @@ Every push publishes that branch as a version of your prototype. Several designe
 
 Pull requests are optional: they don't change what's published. To clean up after merging, turn on **Settings → General → Automatically delete head branches**.
 
-To turn deploys on, once per repo: **Settings → Pages → Source: GitHub Actions**. In a private or internal repo, you can limit the site to people in the organization under **Settings → Pages → Visibility**. To stop deploying, disable the workflow in the **Actions** tab.
+To turn deploys on, once per repo, after your first push: **Settings → Pages → Source: Deploy from a branch**, then **Branch: `pages-site`** and **/ (root)**. The site's address appears at the top of that page. In a private or internal repo, you can limit the site to people in the organization under **Settings → Pages → Visibility**. To stop deploying, disable the workflow in the **Actions** tab.
 
 ## Upgrading
 
