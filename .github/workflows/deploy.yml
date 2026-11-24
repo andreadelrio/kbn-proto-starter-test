@@ -1,0 +1,112 @@
+name: Deploy
+
+# Publishes every branch of the prototype to GitHub Pages:
+# - The site root lists every version: main first, then branches, most recently updated first.
+# - The default branch is published at /main/, every other branch at /branches/<branch>/.
+# - Pushing a branch updates only its version. Deleting a branch removes it.
+# The published site is kept on the pages-site branch. Several designers can push at once.
+# Setup (once per repo): Settings → Pages → Source: GitHub Actions.
+# The kbn-proto-starter template itself never deploys; repos created from it do.
+
+on:
+  push:
+    branches-ignore:
+      - pages-site
+  delete:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+env:
+  DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+  SITE_TITLE: ${{ github.event.repository.name }}
+
+jobs:
+  publish:
+    if: ${{ !github.event.repository.is_template && (github.event_name != 'delete' || github.event.ref_type == 'branch') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Find where the branch is published
+        id: where
+        env:
+          BRANCH: ${{ github.event_name == 'delete' && github.event.ref || github.ref_name }}
+          REPO: ${{ github.event.repository.name }}
+          PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          set -euo pipefail
+          safe="$(printf '%s' "$BRANCH" | sed 's#[^A-Za-z0-9._/-]#-#g')"
+          if [ "$BRANCH" = "$DEFAULT_BRANCH" ]; then target="main"; else target="branches/$safe"; fi
+          # Private and internal sites live at their own domain root; public ones under /<repo>/.
+          if [ "$PRIVATE" = "true" ]; then root="/"; else root="/$REPO/"; fi
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+          echo "root=$root" >> "$GITHUB_OUTPUT"
+          echo "base=$root$target/" >> "$GITHUB_OUTPUT"
+
+      - name: Check and build the branch
+        if: github.event_name != 'delete'
+        env:
+          BASE_PATH: ${{ steps.where.outputs.base }}
+          ROOT_PATH: ${{ steps.where.outputs.root }}
+        run: |
+          set -euo pipefail
+          SKIP_INSTALL_SIMPLE_GIT_HOOKS=1 npm ci --no-audit --no-fund
+          # Stops the deploy if the prototype breaks the EUI rules (eslint.config.js). The build typechecks.
+          npm run lint
+          npm run build
+          # The versions page at the site root (src/versions/).
+          BASE_PATH="$ROOT_PATH" npx vite build --config vite.versions.config.ts
+
+      - name: Publish the branch
+        if: github.event_name != 'delete'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.where.outputs.branch }}
+          TARGET: ${{ steps.where.outputs.target }}
+          VERSIONS_DIST: dist-versions
+        run: bash scripts/publish-site.sh publish "$BRANCH" "$TARGET" dist
+
+      - name: Remove the deleted branch
+        if: github.event_name == 'delete'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.where.outputs.branch }}
+          TARGET: ${{ steps.where.outputs.target }}
+        run: bash scripts/publish-site.sh remove "$BRANCH" "$TARGET"
+
+  # Publishes the latest pages-site. Runs one at a time; a waiting run is replaced by a newer one,
+  # which is fine because each run publishes everything on pages-site when it starts.
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the published site
+        uses: actions/checkout@v4
+        with:
+          ref: pages-site
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
