@@ -1,0 +1,21 @@
+{
+  "title": "kbn-proto-starter-test",
+  "repository": "andreadelrio/kbn-proto-starter-test",
+  "defaultBranch": "main",
+  "versions": [
+    {
+      "branch": "new-flow",
+      "path": "branches/new-flow",
+      "updated": "2026-11-24T18:05:46.242Z",
+      "author": "Andrea Del Rio",
+      "sha": "1f88586f848f6e52a48b56251ec99b3e0982d6d5"
+    },
+    {
+      "branch": "main",
+      "path": "main",
+      "updated": "2026-11-24T18:07:17.107Z",
+      "author": "Andrea Del Rio",
+      "sha": "c36d6b7cb8b68a302ad62d8b20b63967bd1e7a10"
+    }
+  ]
+}
