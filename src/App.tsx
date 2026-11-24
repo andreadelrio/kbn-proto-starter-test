@@ -16,7 +16,7 @@ import {
  * own nav items stay visible but only the ids listed here open a page.
  */
 const PAGES: Record<string, { readonly title: string; readonly render: () => React.ReactNode }> = {
-  'my-page': { title: 'Main page', render: () => <MyPage /> },
+  'my-page': { title: 'New flow', render: () => <MyPage /> },
 };
 
 const FIRST_PAGE = 'my-page';
