@@ -60,7 +60,7 @@ export const MyPage = () => {
           actions={<EuiButton fill>Add data</EuiButton>}
         />
       ) : (
-        <EuiPanel hasBorder>
+        <EuiPanel hasBorder style={{ background: "#ff0000" }}>
           <EuiFlexGroup alignItems="center" responsive={false}>
             <EuiFlexItem>
               <EuiTitle size="xs">
